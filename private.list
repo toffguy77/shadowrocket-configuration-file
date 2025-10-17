@@ -4,12 +4,14 @@
 # UPDATED: 2025-10-17 00:44:25 MSK
 # SOURCE: https://github.com/misha-tgshv/shadowrocket-configuration-file/blob/main/community.list
 # special
-# Tools"
+# Test connections
+DOMAIN-SUFFIX,2ip.ru
+# Tools
 DOMAIN-SUFFIX,raycast.com
 DOMAIN-SUFFIX,arc.net
 DOMAIN-SUFFIX,github.com
 DOMAIN-SUFFIX,ghcr.io
-# CDN"
+# CDN
 DOMAIN-SUFFIX,akamai.net
 DOMAIN-SUFFIX,akamaihd.net
 DOMAIN-SUFFIX,akamaized.net
@@ -39,7 +41,7 @@ DOMAIN-SUFFIX,aliyuncs.com
 DOMAIN-SUFFIX,bdstatic.com
 DOMAIN-SUFFIX,sucuricdn.com
 DOMAIN-SUFFIX,stackpath.com
-# Games"
+# Games
 DOMAIN-SUFFIX,roblox.com
 DOMAIN-SUFFIX,blox.com
 DOMAIN-SUFFIX,rbxcdn.com
@@ -54,7 +56,7 @@ DOMAIN-SUFFIX,msauth.net
 DOMAIN-SUFFIX,msftauth.net
 DOMAIN-SUFFIX,azureedge.net
 DOMAIN-SUFFIX,minecrafteduservices.com
-# Amazon"
+# Amazon
 DOMAIN-SUFFIX,ssl-images-amazon.com
 DOMAIN-SUFFIX,awsapps.com
 DOMAIN-SUFFIX,amazon.com
@@ -64,7 +66,7 @@ DOMAIN-SUFFIX,cloudfront.net
 DOMAIN-SUFFIX,amazontrust.com
 DOMAIN-SUFFIX,amazonses.com
 DOMAIN-SUFFIX,amazoncognito.com
-# YouTube"
+# YouTube
 DOMAIN-SUFFIX,ggpht.cn
 DOMAIN-SUFFIX,ggpht.com
 DOMAIN-SUFFIX,google.com
@@ -242,7 +244,7 @@ DOMAIN-SUFFIX,youtubekids.com
 DOMAIN-SUFFIX,youtubemobilesupport.com
 DOMAIN-SUFFIX,yt.be
 DOMAIN-SUFFIX,ytimg.com
-# Films"
+# Films
 DOMAIN-SUFFIX,soap4youand.me
 DOMAIN-SUFFIX,soap4.me
 DOMAIN-SUFFIX,cdn32.lol
@@ -298,7 +300,7 @@ DOMAIN-SUFFIX,voidboost.in
 DOMAIN-SUFFIX,voidnetwork.cloud
 DOMAIN-SUFFIX,zeflix.online
 DOMAIN-SUFFIX,zetimage.net
-# Torrent Trackers"
+# Torrent Trackers
 DOMAIN-SUFFIX,1337x.to
 DOMAIN-SUFFIX,booktracker.org
 DOMAIN-SUFFIX,booktracker.work
@@ -326,7 +328,7 @@ DOMAIN-SUFFIX,torrent.by
 DOMAIN-SUFFIX,torrindex.net
 DOMAIN-SUFFIX,wstracker.online
 DOMAIN-SUFFIX,ysagin.top
-# AI Models & Tools"
+# AI Models & Tools
 DOMAIN-SUFFIX,manus.im
 DOMAIN-SUFFIX,manus.ai
 DOMAIN-SUFFIX,requesty.ai
@@ -367,17 +369,18 @@ DOMAIN-SUFFIX,x.ai
 DOMAIN-SUFFIX,monica.io
 DOMAIN-SUFFIX,monica.im
 DOMAIN-SUFFIX,monica.com
-# Twitter & Threads"
+DOMAIN-SUFFIX,genspark.ai
+# Twitter & Threads
 DOMAIN-SUFFIX,akamaized.net
 DOMAIN-SUFFIX,t.co
 DOMAIN-SUFFIX,tweetdeck.com
 DOMAIN-SUFFIX,twimg.com
 DOMAIN-SUFFIX,twitter.com
 DOMAIN-SUFFIX,x.com
-# LinkedIn"
+# LinkedIn
 DOMAIN-SUFFIX,licdn.com
 DOMAIN-SUFFIX,linkedin.com
-# Porn"
+# Porn
 DOMAIN-SUFFIX,bbc.co.uk
 DOMAIN-SUFFIX,bbc.com
 DOMAIN-SUFFIX,bbci.co.uk
@@ -404,7 +407,7 @@ DOMAIN-SUFFIX,xnxx.com
 DOMAIN-SUFFIX,xv-ru.com
 DOMAIN-SUFFIX,xvideos-cdn.com
 DOMAIN-SUFFIX,xvideos.com
-# Messengers"
+# Messengers
 DOMAIN-SUFFIX,cdn-telegram.org
 DOMAIN-SUFFIX,comments.app
 DOMAIN-SUFFIX,contest.com
@@ -446,7 +449,7 @@ DOMAIN-SUFFIX,whatsapp.biz
 DOMAIN-SUFFIX,whatsapp.com
 DOMAIN-SUFFIX,whatsapp.net
 DOMAIN-SUFFIX,whispersystems.org
-# JetBrains"
+# JetBrains
 DOMAIN-SUFFIX,1e100.net
 DOMAIN-SUFFIX,amazonaws.com
 DOMAIN-SUFFIX,cloudfront.net
@@ -474,7 +477,7 @@ DOMAIN-SUFFIX,ktor.io
 DOMAIN-SUFFIX,myjetbrains.com
 DOMAIN-SUFFIX,ovh.net
 DOMAIN-SUFFIX,talkingkotlin.com
-# Facebook"
+# Facebook
 DOMAIN-SUFFIX,facebook.com
 DOMAIN-SUFFIX,facebook.com.es
 DOMAIN-SUFFIX,facebook.com.vn
@@ -487,10 +490,7 @@ DOMAIN-SUFFIX,fbsbx.com
 DOMAIN-SUFFIX,licdn.com
 DOMAIN-SUFFIX,tfbnw.net
 DOMAIN-SUFFIX,thefacebook.com
-# Test connections"
-# 2ip.ru"
-DOMAIN-SUFFIX,2ip.ru
-# Instagram"
+# Instagram
 DOMAIN-SUFFIX,cdninstagram.com
 DOMAIN-SUFFIX,facebook.com
 DOMAIN-SUFFIX,facebook.net
