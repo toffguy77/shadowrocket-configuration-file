@@ -34,12 +34,12 @@ jobs:
           fi
           
           sed -i "${LINE_NUM}i RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/private.list,PROXY" base_config.conf
-          mv base_config.conf ru_config.conf
+          mv base_config.conf ru_config-private.conf
       
       - name: Check for changes
         id: check_changes
         run: |
-          git add ru_config.conf
+          git add ru_config-private.conf
           git diff --cached --quiet || echo "changed=true" >> $GITHUB_OUTPUT
       
       - name: Commit and push
