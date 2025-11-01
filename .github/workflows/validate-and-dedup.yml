@@ -65,20 +65,9 @@ jobs:
         run: |
           set -euo pipefail
           echo "Updating ru_config-private.conf to point to $DEDUP_RAW"
-          python3 - <<'PY'
-import os,re
-fn='ru_config-private.conf'
-with open(fn,'r',encoding='utf-8') as f:
-    s=f.read()
-pattern=re.compile(r"RULE-SET,\s*https?://[^,]*private(?:\.dedup)?\.list\s*,", re.I)
-ns=pattern.sub(f"RULE-SET,{os.environ['DEDUP_RAW']},", s)
-if ns!=s:
-    with open(fn,'w',encoding='utf-8') as f:
-        f.write(ns)
-        print('Updated', fn)
-else:
-    print('No update needed for', fn)
-PY
+          # Use perl to do a safe, single-file regex replace using the env var
+          perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp
+          mv /tmp/ru_config.tmp ru_config-private.conf
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add ru_config-private.conf rules/private.dedup.list || true
