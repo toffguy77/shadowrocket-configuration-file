@@ -11,6 +11,7 @@ DOMAIN-SUFFIX,raycast.com
 DOMAIN-SUFFIX,arc.net
 DOMAIN-SUFFIX,github.com
 DOMAIN-SUFFIX,ghcr.io
+DOMAIN-SUFFIX,getmatter.com
 # CDN
 DOMAIN-SUFFIX,akamai.net
 DOMAIN-SUFFIX,akamaihd.net
