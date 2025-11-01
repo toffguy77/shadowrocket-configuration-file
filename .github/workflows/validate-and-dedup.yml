@@ -1,0 +1,89 @@
+name: Validate rules and produce deduped list
+
+on:
+  push:
+    paths:
+      - 'rules/private.list'
+      - 'rules/**'
+      - 'ru_config-private.conf'
+  pull_request:
+    paths:
+      - 'rules/private.list'
+      - 'rules/**'
+      - 'ru_config-private.conf'
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-dedup:
+    runs-on: ubuntu-latest
+    env:
+      BRANCH_NAME: ${{ github.ref_name }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests
+
+      - name: Run rules validator
+        run: |
+          python3 scripts/validate_rules.py rules/private.list --check-urls
+
+      - name: Run config validator
+        run: |
+          python3 scripts/validate_config.py ru_config-private.conf
+
+      - name: Produce deduped list
+        run: |
+          python3 scripts/dedup_rules.py rules/private.list rules/private.dedup.list
+
+      - name: Validate deduped list
+        run: |
+          python3 scripts/validate_rules.py rules/private.dedup.list --check-urls
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          echo "changed=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Update ru_config-private.conf RULE-SET to dedup file and commit
+        if: steps.git-check.outputs.changed != '0'
+        env:
+          DEDUP_RAW: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup.list"
+        run: |
+          set -euo pipefail
+          echo "Updating ru_config-private.conf to point to $DEDUP_RAW"
+          python3 - <<'PY'
+import os,re
+fn='ru_config-private.conf'
+with open(fn,'r',encoding='utf-8') as f:
+    s=f.read()
+pattern=re.compile(r"RULE-SET,\s*https?://[^,]*private(?:\.dedup)?\.list\s*,", re.I)
+ns=pattern.sub(f"RULE-SET,{os.environ['DEDUP_RAW']},", s)
+if ns!=s:
+    with open(fn,'w',encoding='utf-8') as f:
+        f.write(ns)
+        print('Updated', fn)
+else:
+    print('No update needed for', fn)
+PY
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ru_config-private.conf rules/private.dedup.list || true
+          if git commit -m "ci: update rules/private.dedup.list and ru_config-private.conf [skip ci]"; then
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo 'Nothing to commit'
+          fi
