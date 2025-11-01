@@ -12,6 +12,7 @@ DOMAIN-SUFFIX,arc.net
 DOMAIN-SUFFIX,github.com
 DOMAIN-SUFFIX,ghcr.io
 DOMAIN-SUFFIX,getmatter.com
+DOMAIN-SUFFIX,feedly.com
 # CDN
 DOMAIN-SUFFIX,akamai.net
 DOMAIN-SUFFIX,akamaihd.net
