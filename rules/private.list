@@ -4,6 +4,8 @@
 # UPDATED: 2025-10-17 00:44:25 MSK
 # SOURCE: https://github.com/misha-tgshv/shadowrocket-configuration-file/blob/main/community.list
 # special
+# ci-test: trigger validate-and-dedup workflow
+
 # Test connections
 DOMAIN-SUFFIX,2ip.ru
 # Tools
@@ -502,8 +504,7 @@ DOMAIN-SUFFIX,fbcdn.com
 DOMAIN-SUFFIX,fbcdn.net
 DOMAIN-SUFFIX,ig.me
 DOMAIN-SUFFIX,instagram.com
-# Update from Telegram bot
 
-# ci-test: trigger validate-and-dedup workflow
+# Update from Telegram bot
 # Added: 2025-11-02 20:12:10 UTC | User: @ya_thatguy
 DOMAIN-SUFFIX,obsidian.md
