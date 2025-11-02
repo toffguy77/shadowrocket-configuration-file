@@ -505,3 +505,5 @@ DOMAIN-SUFFIX,instagram.com
 # Update from Telegram bot
 
 # ci-test: trigger validate-and-dedup workflow
+# Added: 2025-11-02 20:12:10 UTC | User: @ya_thatguy
+DOMAIN-SUFFIX,obsidian.md
