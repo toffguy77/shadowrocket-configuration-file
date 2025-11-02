@@ -9,7 +9,6 @@ DOMAIN-SUFFIX,2ip.ru
 # Tools
 DOMAIN-SUFFIX,raycast.com
 DOMAIN-SUFFIX,arc.net
-DOMAIN-SUFFIX,github.com
 DOMAIN-SUFFIX,ghcr.io
 DOMAIN-SUFFIX,getmatter.com
 DOMAIN-SUFFIX,feedly.com
@@ -345,6 +344,7 @@ DOMAIN-SUFFIX,claude.ai
 DOMAIN-SUFFIX,claudeusercontent.com
 DOMAIN-SUFFIX,deepl.com
 DOMAIN-SUFFIX,elevenlabs.io
+DOMAIN-SUFFIX,github.com
 DOMAIN-SUFFIX,githubcopilot.com
 DOMAIN-SUFFIX,githubusercontent.com
 DOMAIN-SUFFIX,gpt3-openai.com
