@@ -503,5 +503,6 @@ DOMAIN-SUFFIX,fbcdn.com
 DOMAIN-SUFFIX,fbcdn.net
 DOMAIN-SUFFIX,ig.me
 DOMAIN-SUFFIX,instagram.com
+# Update from Telegram bot
 
 # ci-test: trigger validate-and-dedup workflow
