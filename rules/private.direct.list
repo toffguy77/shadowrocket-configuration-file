@@ -1,0 +1,11 @@
+# NAME: private.list
+# AUTHOR: toffguy77
+# REPO: https://github.com/toffguy77/shadowrocket-configuration-file
+# UPDATED: 2025-10-17 00:44:25 MSK
+# SOURCE: https://github.com/misha-tgshv/shadowrocket-configuration-file/blob/main/community.list
+# special
+# ci-test: trigger validate-and-dedup workflow
+
+DOMAIN-SUFFIX,gosuslugi.ru
+DOMAIN-SUFFIX,vk.com
+DOMAIN-SUFFIX,mos.ru
