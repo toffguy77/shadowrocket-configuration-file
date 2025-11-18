@@ -87,9 +87,9 @@ def validate(path):
         with open(path, 'r', encoding='utf-8') as f:
             raw_lines = f.readlines()
     except UnicodeDecodeError:
-        return { 'ok': False, 'errors': ['File is not valid UTF-8 or contains invalid bytes.'] }
+        return { 'ok': False, 'errors': [(0, '', 'File is not valid UTF-8 or contains invalid bytes.')] }
     except FileNotFoundError:
-        return { 'ok': False, 'errors': [f'File not found: {path}'] }
+        return { 'ok': False, 'errors': [(0, '', f'File not found: {path}')] }
 
     for i, raw in enumerate(raw_lines, 1):
         line = raw.rstrip('\n')
@@ -198,8 +198,13 @@ def main():
         print(f'OK: {path} — формат в порядке, warnings: {len(res.get("warnings",[]))}')
     else:
         print(f'ERROR: {len(res.get("errors",[]))} problem(s) found:')
-        for ln, txt, msg in res['errors'][:200]:
-            print(f'{ln:4d}: {msg} -- {txt}')
+        for err in res['errors'][:200]:
+            if len(err) == 3:
+                ln, txt, msg = err
+                print(f'{ln:4d}: {msg} -- {txt}')
+            elif len(err) == 2:
+                ln, msg = err
+                print(f'{ln:4d}: {msg}')
     if res.get('warnings'):
         print('\nWarnings:')
         for ln, msg in res['warnings'][:500]:
