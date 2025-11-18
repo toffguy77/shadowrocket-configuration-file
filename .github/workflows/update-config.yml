@@ -11,34 +11,85 @@ on:
       - 'rules/private.list'
       - 'rules/private.direct.list'
 
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update-config:
     runs-on: ubuntu-latest
-    
+    env:
+      BRANCH_NAME: ${{ github.ref_name }}
+      REPO: ${{ github.repository }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Mark workspace safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests
       
       - name: Download base config
         run: |
-          curl -o base_config.conf https://raw.githubusercontent.com/amatol/shadowrocket-configuration/refs/heads/main/ru_config.conf
+          curl -sSfL -o base_config.conf https://raw.githubusercontent.com/amatol/shadowrocket-configuration/refs/heads/main/ru_config.conf
       
       - name: Inject private rules
         run: |
           awk 'BEGIN{added=0} {if(!added && $0 ~ /^FINAL,DIRECT/){print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private.list,PROXY"; print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private.direct.list,DIRECT"; added=1} print $0}' base_config.conf > ru_config-private.conf
+
+      - name: Validate config (basic)
+        run: |
+          python3 scripts/validate_config.py ru_config-private.conf
+
+      - name: Produce deduped lists
+        run: |
+          python3 scripts/dedup_rules.py rules/private.list rules/private.dedup.list
+          python3 scripts/dedup_rules.py rules/private.direct.list rules/private.dedup-direct.list
+
+      - name: Validate deduped lists
+        run: |
+          python3 scripts/validate_rules.py rules/private.dedup.list --check-urls
+          python3 scripts/validate_rules.py rules/private.dedup-direct.list --check-urls
+
+      - name: Rewrite ru_config-private.conf RULE-SETs to dedup (in-place)
+        env:
+          DEDUP_RAW_PROXY: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup.list"
+          DEDUP_RAW_DIRECT: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup-direct.list"
+        run: |
+          set -euo pipefail
+          perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_PROXY"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp && mv /tmp/ru_config.tmp ru_config-private.conf
+          perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_DIRECT"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?(?:[\.-])direct\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp && mv /tmp/ru_config.tmp ru_config-private.conf
       
       - name: Check for changes
         id: check_changes
         run: |
-          git add ru_config-private.conf
-          git diff --cached --quiet || echo "changed=true" >> $GITHUB_OUTPUT
+          git add ru_config-private.conf rules/private.dedup.list rules/private.dedup-direct.list
+          CHANGED=$(git status --porcelain | wc -l | tr -d '[:space:]')
+          if [ "$CHANGED" != "0" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
       
       - name: Commit and push
         if: steps.check_changes.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -m "Auto-update: inject private rules [$(date +'%Y-%m-%d %H:%M:%S')]"
-          git push
+          git commit -m "Auto-update: rebuild ru_config-private.conf + dedup lists [skip ci] ($(date +'%Y-%m-%d %H:%M:%S'))"
+          git push origin HEAD:${{ github.ref_name }}
