@@ -40,38 +40,45 @@ jobs:
       - name: Run rules validator
         run: |
           python3 scripts/validate_rules.py rules/private.list --check-urls
+          python3 scripts/validate_rules.py rules/private.direct.list --check-urls
 
       - name: Run config validator
         run: |
           python3 scripts/validate_config.py ru_config-private.conf
 
-      - name: Produce deduped list
+      - name: Produce deduped lists
         run: |
           python3 scripts/dedup_rules.py rules/private.list rules/private.dedup.list
+          python3 scripts/dedup_rules.py rules/private.direct.list rules/private.dedup-direct.list
 
-      - name: Validate deduped list
+      - name: Validate deduped lists
         run: |
           python3 scripts/validate_rules.py rules/private.dedup.list --check-urls
+          python3 scripts/validate_rules.py rules/private.dedup-direct.list --check-urls
 
       - name: Check for changes
         id: git-check
         run: |
           echo "changed=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT
 
-      - name: Update ru_config-private.conf RULE-SET to dedup file and commit
+      - name: Update ru_config-private.conf RULE-SETs to dedup files and commit
         if: steps.git-check.outputs.changed != '0'
         env:
-          DEDUP_RAW: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup.list"
+          DEDUP_RAW_PROXY: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup.list"
+          DEDUP_RAW_DIRECT: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup-direct.list"
         run: |
           set -euo pipefail
-          echo "Updating ru_config-private.conf to point to $DEDUP_RAW"
-          # Use perl to do a safe, single-file regex replace using the env var
-          perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp
+          echo "Updating ru_config-private.conf to point to $DEDUP_RAW_PROXY and $DEDUP_RAW_DIRECT"
+          # Replace PROXY private list to dedup
+          perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_PROXY"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp
+          mv /tmp/ru_config.tmp ru_config-private.conf
+          # Replace DIRECT private direct list to dedup-direct (dot or dash between private and direct)
+          perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_DIRECT"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?(?:[\.-])direct\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp
           mv /tmp/ru_config.tmp ru_config-private.conf
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ru_config-private.conf rules/private.dedup.list || true
-          if git commit -m "ci: update rules/private.dedup.list and ru_config-private.conf [skip ci]"; then
+          git add ru_config-private.conf rules/private.dedup.list rules/private.dedup-direct.list || true
+          if git commit -m "ci: update rules/private.* dedup files and ru_config-private.conf [skip ci]"; then
             git push origin HEAD:${{ github.ref_name }}
           else
             echo 'Nothing to commit'

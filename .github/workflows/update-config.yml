@@ -8,7 +8,8 @@ on:
     branches:
       - main
     paths:
-      - 'private.list'
+      - 'rules/private.list'
+      - 'rules/private.direct.list'
 
 jobs:
   update-config:
@@ -26,15 +27,7 @@ jobs:
       
       - name: Inject private rules
         run: |
-          LINE_NUM=$(grep -n "^FINAL,DIRECT" base_config.conf | cut -d: -f1)
-          
-          if [ -z "$LINE_NUM" ]; then
-            echo "FINAL,DIRECT не найден"
-            exit 1
-          fi
-          
-          sed -i "${LINE_NUM}i RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/private.list,PROXY" base_config.conf
-          mv base_config.conf ru_config-private.conf
+          awk 'BEGIN{added=0} {if(!added && $0 ~ /^FINAL,DIRECT/){print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private.list,PROXY"; print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private.direct.list,DIRECT"; added=1} print $0}' base_config.conf > ru_config-private.conf
       
       - name: Check for changes
         id: check_changes
