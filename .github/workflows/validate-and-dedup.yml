@@ -5,13 +5,13 @@ on:
   push:
     paths:
       - 'rules/private.list'
-      - 'rules/private.direct.list'
+      - 'rules/private-direct.list'
       - 'rules/**'
       - 'ru_config-private.conf'
   pull_request:
     paths:
       - 'rules/private.list'
-      - 'rules/private.direct.list'
+      - 'rules/private-direct.list'
       - 'rules/**'
       - 'ru_config-private.conf'
 
@@ -50,7 +50,7 @@ jobs:
       - name: Run rules validator
         run: |
           python3 scripts/validate_rules.py rules/private.list --check-urls
-          python3 scripts/validate_rules.py rules/private.direct.list --check-urls
+          python3 scripts/validate_rules.py rules/private-direct.list --check-urls
 
       - name: Run config validator
         run: |
@@ -59,7 +59,7 @@ jobs:
       - name: Produce deduped lists
         run: |
           python3 scripts/dedup_rules.py rules/private.list rules/private.dedup.list
-          python3 scripts/dedup_rules.py rules/private.direct.list rules/private.dedup-direct.list
+          python3 scripts/dedup_rules.py rules/private-direct.list rules/private.dedup-direct.list
 
       - name: Validate deduped lists
         run: |

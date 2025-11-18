@@ -9,7 +9,7 @@ on:
       - main
     paths:
       - 'rules/private.list'
-      - 'rules/private.direct.list'
+      - 'rules/private-direct.list'
 
 permissions:
   contents: write
@@ -50,7 +50,7 @@ jobs:
       
       - name: Inject private rules
         run: |
-          awk 'BEGIN{added=0} {if(!added && $0 ~ /^FINAL,DIRECT/){print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private.list,PROXY"; print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private.direct.list,DIRECT"; added=1} print $0}' base_config.conf > ru_config-private.conf
+          awk 'BEGIN{added=0} {if(!added && $0 ~ /^FINAL,DIRECT/){print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private.list,PROXY"; print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private-direct.list,DIRECT"; added=1} print $0}' base_config.conf > ru_config-private.conf
 
       - name: Validate config (basic)
         run: |
@@ -59,7 +59,7 @@ jobs:
       - name: Produce deduped lists
         run: |
           python3 scripts/dedup_rules.py rules/private.list rules/private.dedup.list
-          python3 scripts/dedup_rules.py rules/private.direct.list rules/private.dedup-direct.list
+          python3 scripts/dedup_rules.py rules/private-direct.list rules/private.dedup-direct.list
 
       - name: Validate deduped lists
         run: |
