@@ -1,14 +1,17 @@
 name: Validate rules and produce deduped list
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'rules/private.list'
+      - 'rules/private.direct.list'
       - 'rules/**'
       - 'ru_config-private.conf'
   pull_request:
     paths:
       - 'rules/private.list'
+      - 'rules/private.direct.list'
       - 'rules/**'
       - 'ru_config-private.conf'
 
@@ -56,25 +59,33 @@ jobs:
           python3 scripts/validate_rules.py rules/private.dedup.list --check-urls
           python3 scripts/validate_rules.py rules/private.dedup-direct.list --check-urls
 
-      - name: Check for changes
-        id: git-check
-        run: |
-          echo "changed=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT
-
-      - name: Update ru_config-private.conf RULE-SETs to dedup files and commit
-        if: steps.git-check.outputs.changed != '0'
+      - name: Rewrite ru_config-private.conf RULE-SETs to dedup (in-place)
         env:
           DEDUP_RAW_PROXY: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup.list"
           DEDUP_RAW_DIRECT: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup-direct.list"
         run: |
           set -euo pipefail
-          echo "Updating ru_config-private.conf to point to $DEDUP_RAW_PROXY and $DEDUP_RAW_DIRECT"
+          echo "Rewriting ru_config-private.conf to dedup URLs"
           # Replace PROXY private list to dedup
           perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_PROXY"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp
           mv /tmp/ru_config.tmp ru_config-private.conf
           # Replace DIRECT private direct list to dedup-direct (dot or dash between private and direct)
           perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_DIRECT"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?(?:[\.-])direct\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp
           mv /tmp/ru_config.tmp ru_config-private.conf
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          CHANGED=$(git status --porcelain | wc -l | tr -d '[:space:]')
+          if [ "$CHANGED" != "0" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit dedup outputs and ru_config (if changed)
+        if: steps.git-check.outputs.changed == 'true'
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add ru_config-private.conf rules/private.dedup.list rules/private.dedup-direct.list || true
