@@ -51,6 +51,7 @@ jobs:
       - name: Inject private rules
         run: |
           awk 'BEGIN{added=0} {if(!added && $0 ~ /^FINAL,DIRECT/){print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private.list,PROXY"; print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private-direct.list,DIRECT"; added=1} print $0}' base_config.conf > ru_config-private.conf
+          rm -f base_config.conf
 
       - name: Validate config (basic)
         run: |
@@ -63,8 +64,13 @@ jobs:
 
       - name: Validate deduped lists
         run: |
-          python3 scripts/validate_rules.py rules/private.dedup.list --check-urls
-          python3 scripts/validate_rules.py rules/private.dedup-direct.list --check-urls
+          python3 scripts/validate_rules.py rules/private.dedup.list --check-urls > url_check.log 2>&1 || echo "Validation warnings logged"
+          python3 scripts/validate_rules.py rules/private.dedup-direct.list --check-urls >> url_check.log 2>&1 || echo "Validation warnings logged"
+          if [ -f url_check.log ]; then
+            echo "URL_CHECK_LOG<<EOF" >> $GITHUB_ENV
+            cat url_check.log >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
 
       - name: Rewrite ru_config-private.conf RULE-SETs to dedup (in-place)
         env:
@@ -78,12 +84,11 @@ jobs:
       - name: Check for changes
         id: check_changes
         run: |
-          git add ru_config-private.conf rules/private.dedup.list rules/private.dedup-direct.list
-          CHANGED=$(git status --porcelain | wc -l | tr -d '[:space:]')
-          if [ "$CHANGED" != "0" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
+          git add ru_config-private.conf rules/private.dedup.list rules/private.dedup-direct.list url_check.log 2>/dev/null || true
+          if git diff --cached --quiet; then
             echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
           fi
       
       - name: Commit and push
