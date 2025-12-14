@@ -46,7 +46,17 @@ jobs:
       
       - name: Download base config
         run: |
-          curl -sSfL -o base_config.conf https://raw.githubusercontent.com/amatol/shadowrocket-configuration/refs/heads/main/ru_config.conf
+          # #region agent log
+          echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:47\",\"message\":\"Starting base config download\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:47\",\"message\":\"Starting base config download\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> .cursor/debug.log 2>/dev/null || true
+          # #endregion
+          curl -sSfL -o base_config.conf https://raw.githubusercontent.com/amatol/shadowrocket-configuration/refs/heads/main/ru_config.conf || CURL_EXIT=$?
+          if [ "${CURL_EXIT:-0}" != "0" ]; then
+            echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:49\",\"message\":\"ERROR: Failed to download base config\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"exitCode\":\"${CURL_EXIT}\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:49\",\"message\":\"ERROR: Failed to download base config\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"exitCode\":\"${CURL_EXIT}\"}}" >> .cursor/debug.log 2>/dev/null || true
+            exit ${CURL_EXIT}
+          fi
+          # #region agent log
+          echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:49\",\"message\":\"Base config downloaded successfully\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"fileSize\":\"$(wc -c < base_config.conf)\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:49\",\"message\":\"Base config downloaded successfully\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"fileSize\":\"$(wc -c < base_config.conf)\"}}" >> .cursor/debug.log 2>/dev/null || true
+          # #endregion
       
       - name: Inject private rules
         run: |
@@ -64,8 +74,18 @@ jobs:
 
       - name: Validate deduped lists
         run: |
-          python3 scripts/validate_rules.py rules/private.dedup.list --check-urls > url_check.log 2>&1 || echo "Validation warnings logged"
-          python3 scripts/validate_rules.py rules/private.dedup-direct.list --check-urls >> url_check.log 2>&1 || echo "Validation warnings logged"
+          python3 scripts/validate_rules.py rules/private.dedup.list --check-urls > url_check.log 2>&1 || VALIDATION_EXIT=$?
+          if [ "${VALIDATION_EXIT:-0}" != "0" ]; then
+            echo "ERROR: Validation of private.dedup.list failed with exit code ${VALIDATION_EXIT}"
+            cat url_check.log || true
+            exit ${VALIDATION_EXIT}
+          fi
+          python3 scripts/validate_rules.py rules/private.dedup-direct.list --check-urls >> url_check.log 2>&1 || VALIDATION_EXIT=$?
+          if [ "${VALIDATION_EXIT:-0}" != "0" ]; then
+            echo "ERROR: Validation of private.dedup-direct.list failed with exit code ${VALIDATION_EXIT}"
+            cat url_check.log || true
+            exit ${VALIDATION_EXIT}
+          fi
           if [ -f url_check.log ]; then
             echo "URL_CHECK_LOG<<EOF" >> $GITHUB_ENV
             cat url_check.log >> $GITHUB_ENV
@@ -78,8 +98,35 @@ jobs:
           DEDUP_RAW_DIRECT: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup-direct.list"
         run: |
           set -euo pipefail
-          perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_PROXY"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp && mv /tmp/ru_config.tmp ru_config-private.conf
-          perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_DIRECT"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?(?:[\.-])direct\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp && mv /tmp/ru_config.tmp ru_config-private.conf
+          # #region agent log
+          echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:75\",\"message\":\"Starting RULE-SET rewrite\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"dedupProxy\":\"$DEDUP_RAW_PROXY\",\"dedupDirect\":\"$DEDUP_RAW_DIRECT\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:75\",\"message\":\"Starting RULE-SET rewrite\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"dedupProxy\":\"$DEDUP_RAW_PROXY\",\"dedupDirect\":\"$DEDUP_RAW_DIRECT\"}}" >> .cursor/debug.log 2>/dev/null || true
+          # #endregion
+          cp ru_config-private.conf ru_config-private.conf.bak
+          perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_PROXY"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp
+          # #region agent log
+          grep -n "RULE-SET.*private" /tmp/ru_config.tmp | head -2 | while IFS=: read line_num content; do echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:81\",\"message\":\"RULE-SET line after PROXY replace\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"lineNum\":\"$line_num\",\"content\":\"$content\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:81\",\"message\":\"RULE-SET line after PROXY replace\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"lineNum\":\"$line_num\",\"content\":\"$content\"}}" >> .cursor/debug.log 2>/dev/null || true; done
+          # #endregion
+          mv /tmp/ru_config.tmp ru_config-private.conf
+          perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_DIRECT"}} s{RULE-SET,\s*https?://[^,]*private(?:\.dedup)?(?:[\.-])direct\.list\s*,}{"RULE-SET,$d,"}ig' ru_config-private.conf > /tmp/ru_config.tmp
+          # #region agent log
+          grep -n "RULE-SET.*private" /tmp/ru_config.tmp | head -2 | while IFS=: read line_num content; do echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:82\",\"message\":\"RULE-SET line after DIRECT replace\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"lineNum\":\"$line_num\",\"content\":\"$content\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:82\",\"message\":\"RULE-SET line after DIRECT replace\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"lineNum\":\"$line_num\",\"content\":\"$content\"}}" >> .cursor/debug.log 2>/dev/null || true; done
+          # #endregion
+          mv /tmp/ru_config.tmp ru_config-private.conf
+          # Validate the result
+          if grep -q '^"RULE-SET' ru_config-private.conf || grep -q 'RULE-SET.*,"' ru_config-private.conf; then
+            echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:82\",\"message\":\"ERROR: Malformed RULE-SET detected after replacement\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:82\",\"message\":\"ERROR: Malformed RULE-SET detected after replacement\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> .cursor/debug.log 2>/dev/null || true
+            echo "ERROR: Malformed RULE-SET entries detected!"
+            grep '^"RULE-SET\|RULE-SET.*,"' ru_config-private.conf || true
+            exit 1
+          fi
+      
+      - name: Validate config after RULE-SET rewrite
+        run: |
+          python3 scripts/validate_config.py ru_config-private.conf || CONFIG_VALIDATION_EXIT=$?
+          if [ "${CONFIG_VALIDATION_EXIT:-0}" != "0" ]; then
+            echo "ERROR: Config validation failed after RULE-SET rewrite"
+            exit ${CONFIG_VALIDATION_EXIT}
+          fi
       
       - name: Check for changes
         id: check_changes
@@ -97,5 +144,19 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -m "Auto-update: rebuild ru_config-private.conf + dedup lists [skip ci] ($(date +'%Y-%m-%d %H:%M:%S'))"
-          git pull --rebase origin ${{ github.ref_name }}
-          git push origin HEAD:${{ github.ref_name }}
+          # Fetch latest changes before rebase to avoid race conditions
+          git fetch origin ${{ github.ref_name }}
+          git pull --rebase origin ${{ github.ref_name }} || REBASE_EXIT=$?
+          if [ "${REBASE_EXIT:-0}" != "0" ]; then
+            echo "ERROR: git pull --rebase failed with exit code ${REBASE_EXIT}"
+            git status || true
+            exit ${REBASE_EXIT}
+          fi
+          git push origin HEAD:${{ github.ref_name }} || PUSH_EXIT=$?
+          if [ "${PUSH_EXIT:-0}" != "0" ]; then
+            echo "ERROR: git push failed with exit code ${PUSH_EXIT}"
+            # Try one more time with fetch and rebase
+            git fetch origin ${{ github.ref_name }}
+            git rebase origin/${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }} || exit ${PUSH_EXIT}
+          fi
