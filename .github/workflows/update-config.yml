@@ -47,6 +47,7 @@ jobs:
       - name: Download base config
         run: |
           # #region agent log
+          mkdir -p .cursor 2>/dev/null || true
           echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:47\",\"message\":\"Starting base config download\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:47\",\"message\":\"Starting base config download\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> .cursor/debug.log 2>/dev/null || true
           # #endregion
           curl -sSfL -o base_config.conf https://raw.githubusercontent.com/amatol/shadowrocket-configuration/refs/heads/main/ru_config.conf || CURL_EXIT=$?
@@ -99,6 +100,7 @@ jobs:
         run: |
           set -euo pipefail
           # #region agent log
+          mkdir -p .cursor 2>/dev/null || true
           echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:75\",\"message\":\"Starting RULE-SET rewrite\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"dedupProxy\":\"$DEDUP_RAW_PROXY\",\"dedupDirect\":\"$DEDUP_RAW_DIRECT\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:75\",\"message\":\"Starting RULE-SET rewrite\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"dedupProxy\":\"$DEDUP_RAW_PROXY\",\"dedupDirect\":\"$DEDUP_RAW_DIRECT\"}}" >> .cursor/debug.log 2>/dev/null || true
           # #endregion
           cp ru_config-private.conf ru_config-private.conf.bak

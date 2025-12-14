@@ -50,6 +50,7 @@ jobs:
       - name: Run rules validator
         run: |
           # #region agent log
+          mkdir -p .cursor 2>/dev/null || true
           echo "{\"timestamp\":$(date +%s000),\"location\":\"validate-and-dedup.yml:52\",\"message\":\"Starting rules validation\",\"data\":{\"hypothesisId\":\"A\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"validate-and-dedup.yml:52\",\"message\":\"Starting rules validation\",\"data\":{\"hypothesisId\":\"A\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> .cursor/debug.log 2>/dev/null || true
           # #endregion
           if [ ! -f rules/private.list ]; then
@@ -100,6 +101,7 @@ jobs:
         run: |
           set -euo pipefail
           # #region agent log
+          mkdir -p .cursor 2>/dev/null || true
           echo "{\"timestamp\":$(date +%s000),\"location\":\"validate-and-dedup.yml:69\",\"message\":\"Starting RULE-SET rewrite\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"dedupProxy\":\"$DEDUP_RAW_PROXY\",\"dedupDirect\":\"$DEDUP_RAW_DIRECT\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"validate-and-dedup.yml:69\",\"message\":\"Starting RULE-SET rewrite\",\"data\":{\"hypothesisId\":\"B\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"dedupProxy\":\"$DEDUP_RAW_PROXY\",\"dedupDirect\":\"$DEDUP_RAW_DIRECT\"}}" >> .cursor/debug.log 2>/dev/null || true
           # #endregion
           echo "Rewriting ru_config-private.conf to dedup URLs"
@@ -149,6 +151,7 @@ jobs:
         if: steps.git-check.outputs.changed == 'true' && github.event_name != 'pull_request'
         run: |
           # #region agent log
+          mkdir -p .cursor 2>/dev/null || true
           echo "{\"timestamp\":$(date +%s000),\"location\":\"validate-and-dedup.yml:93\",\"message\":\"Starting git commit/push\",\"data\":{\"hypothesisId\":\"C\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"validate-and-dedup.yml:93\",\"message\":\"Starting git commit/push\",\"data\":{\"hypothesisId\":\"C\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> .cursor/debug.log 2>/dev/null || true
           # #endregion
           git config user.name "github-actions[bot]"
