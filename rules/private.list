@@ -525,7 +525,7 @@ DOMAIN-SUFFIX,adventofagents.com
 DOMAIN-SUFFIX,trybloom.ai
 # Added: 2025-12-13 19:19:17 UTC | User: @ya_thatguy
 DOMAIN-SUFFIX,notebooklm.google
-# Added: 2026-01-06 17:47:31 UTC | User: @ya_thatguy
-DOMAIN-SUFFIX,apple.com
+# Removed: 2026-01-13 05:31:24 UTC | User: @ya_thatguy
+# DOMAIN-SUFFIX,apple.com
 # Added: 2026-01-06 19:34:43 UTC | User: @ya_thatguy
 DOMAIN-SUFFIX,suno.com
