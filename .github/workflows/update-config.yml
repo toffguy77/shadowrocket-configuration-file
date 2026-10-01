@@ -44,26 +44,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install requests
       
-      - name: Download base config
-        run: |
-          # #region agent log
-          mkdir -p .cursor 2>/dev/null || true
-          echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:47\",\"message\":\"Starting base config download\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:47\",\"message\":\"Starting base config download\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\"}}" >> .cursor/debug.log 2>/dev/null || true
-          # #endregion
-          curl -sSfL -o base_config.conf https://raw.githubusercontent.com/amatol/shadowrocket-configuration/refs/heads/main/ru_config.conf || CURL_EXIT=$?
-          if [ "${CURL_EXIT:-0}" != "0" ]; then
-            echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:49\",\"message\":\"ERROR: Failed to download base config\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"exitCode\":\"${CURL_EXIT}\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:49\",\"message\":\"ERROR: Failed to download base config\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"exitCode\":\"${CURL_EXIT}\"}}" >> .cursor/debug.log 2>/dev/null || true
-            exit ${CURL_EXIT}
-          fi
-          # #region agent log
-          echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:49\",\"message\":\"Base config downloaded successfully\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"fileSize\":\"$(wc -c < base_config.conf)\"}}" >> "$GITHUB_WORKSPACE/.cursor/debug.log" 2>/dev/null || echo "{\"timestamp\":$(date +%s000),\"location\":\"update-config.yml:49\",\"message\":\"Base config downloaded successfully\",\"data\":{\"hypothesisId\":\"E\",\"runId\":\"debug-run\",\"sessionId\":\"debug-session\",\"fileSize\":\"$(wc -c < base_config.conf)\"}}" >> .cursor/debug.log 2>/dev/null || true
-          # #endregion
-      
-      - name: Inject private rules
-        run: |
-          awk 'BEGIN{added=0} {if(!added && $0 ~ /^FINAL,DIRECT/){print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private.list,PROXY"; print "RULE-SET,https://raw.githubusercontent.com/toffguy77/shadowrocket-configuration-file/refs/heads/main/rules/private-direct.list,DIRECT"; added=1} print $0}' base_config.conf > ru_config-private.conf
-          rm -f base_config.conf
-
+      # ⚠️ Шаги «Download base config» и «Inject private rules» удалены 2026-10-01.
+      # Они перегенерировали ru_config-private.conf из upstream amatol и затирали
+      # ручной порядок правил (DIRECT-override обязан стоять выше PROXY-листов).
+      # Конфиг теперь — source of truth в репозитории, а не производный артефакт.
+      # Этот workflow остался только для пересборки dedup-списков.
       - name: Validate config (basic)
         run: |
           python3 scripts/validate_config.py ru_config-private.conf
