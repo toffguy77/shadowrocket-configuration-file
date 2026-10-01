@@ -96,8 +96,12 @@ jobs:
 
       - name: Rewrite ru_config-private.conf RULE-SETs to dedup (in-place)
         env:
-          DEDUP_RAW_PROXY: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup.list"
-          DEDUP_RAW_DIRECT: "https://raw.githubusercontent.com/${{ env.REPO }}/${{ env.BRANCH_NAME }}/rules/private.dedup-direct.list"
+          # refs/heads/main жёстко, а НЕ ${{ env.BRANCH_NAME }}: на фича-ветке
+          # подстановка запекала в конфиг имя ветки, и после мёрджа с удалением
+          # ветки все устройства получали 404 вместо правил маршрутизации.
+          # Конфиг всегда обязан ссылаться на main.
+          DEDUP_RAW_PROXY: "https://raw.githubusercontent.com/${{ env.REPO }}/refs/heads/main/rules/private.dedup.list"
+          DEDUP_RAW_DIRECT: "https://raw.githubusercontent.com/${{ env.REPO }}/refs/heads/main/rules/private.dedup-direct.list"
         run: |
           set -euo pipefail
           # #region agent log

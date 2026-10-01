@@ -1,17 +1,68 @@
-# NAME: private.list
+# NAME: private-direct.list
 # AUTHOR: toffguy77
 # REPO: https://github.com/toffguy77/shadowrocket-configuration-file
-# UPDATED: 2025-10-17 00:44:25 MSK
-# SOURCE: https://github.com/misha-tgshv/shadowrocket-configuration-file/blob/main/community.list
-# special
-# ci-test: trigger validate-and-dedup workflow
+# UPDATED: 2026-10-01
+# ПРЕДНАЗНАЧЕНИЕ: этот список подключается ПЕРВЫМ в [Rule] и перебивает все
+# PROXY-правила ниже. Сюда попадает только то, что ОБЯЗАНО выходить с домашнего
+# (резидентского) адреса. Источник решений — /etc/sing-box/config.json на NUC,
+# правило #1 «Explicit RU allow-list».
+#
+# ⚠️ Не расширять по принципу «ну и остальное от этого сервиса тоже». Проверено
+# на роутере: увод всего roblox.com в direct чинит логин и ломает ассеты.
 
+# --- Госуслуги, банки, RU-сервисы, которые банят датацентр-IP ---
 DOMAIN-SUFFIX,gosuslugi.ru
-DOMAIN-SUFFIX,vk.com
 DOMAIN-SUFFIX,mos.ru
-# Added: 2025-11-19 07:34:09 UTC | User: @ya_thatguy
+DOMAIN-SUFFIX,nalog.ru
+DOMAIN-SUFFIX,cbr.ru
+DOMAIN-SUFFIX,sber.ru
+DOMAIN-SUFFIX,sbrf.ru
 DOMAIN-SUFFIX,tinkoff.ru
-# Added: 2025-12-20 10:27:44 UTC | User: @ya_thatguy
+DOMAIN-SUFFIX,vtb.ru
 DOMAIN-SUFFIX,mts.ru
-# Added: 2026-01-17 09:28:53 UTC | User: @ya_thatguy
+DOMAIN-SUFFIX,vk.com
+DOMAIN-SUFFIX,vk.me
+DOMAIN-SUFFIX,userapi.com
+DOMAIN-SUFFIX,mycdn.me
+DOMAIN-SUFFIX,ok.ru
+DOMAIN-SUFFIX,mail.ru
+DOMAIN-SUFFIX,yandex.com
+DOMAIN-SUFFIX,yandex.net
+DOMAIN-SUFFIX,ya.ru
+DOMAIN-SUFFIX,dzen.ru
+DOMAIN-SUFFIX,avito.ru
+DOMAIN-SUFFIX,ozon.ru
+DOMAIN-SUFFIX,wildberries.ru
+DOMAIN-SUFFIX,kinopoisk.ru
+DOMAIN-SUFFIX,ivi.ru
+DOMAIN-SUFFIX,hh.ru
+DOMAIN-SUFFIX,habr.com
+DOMAIN-SUFFIX,pikabu.ru
+DOMAIN-SUFFIX,2gis.com
 DOMAIN-SUFFIX,supabase.co
+
+# --- Логин-хосты, где anti-fraud не пропускает датацентр-IP ---
+# Roblox: кросс-девайс авторизация + Arkose CAPTCHA. Проверено на PS5 2026-07-26:
+# через туннель логин висит на «Login to Roblox», с домашнего IP проходит.
+# Всё остальное Roblox (ассеты, API, game-join) остаётся в туннеле — rbxcdn
+# напрямую душится DPI.
+DOMAIN,auth.roblox.com
+DOMAIN,roblox-api.arkoselabs.com
+# Epic Games: та же механика (ol/on — login+ом, epicgames.dev — EOS auth)
+DOMAIN-SUFFIX,ol.epicgames.com
+DOMAIN-SUFFIX,on.epicgames.com
+DOMAIN-SUFFIX,epicgames.dev
+
+# --- Железо и консоли, которым проксирование только вредит ---
+DOMAIN-SUFFIX,playstation.com
+DOMAIN-SUFFIX,playstation.net
+DOMAIN-SUFFIX,lge.com
+DOMAIN-SUFFIX,lgeapi.com
+DOMAIN-SUFFIX,lgtviot.com
+DOMAIN-SUFFIX,lgtvcommon.com
+DOMAIN-SUFFIX,nextlgsdp.com
+
+# --- Apple: push, активация, captive portal ---
+DOMAIN-SUFFIX,push.apple.com
+DOMAIN-SUFFIX,captive.apple.com
+DOMAIN-SUFFIX,albert.apple.com
