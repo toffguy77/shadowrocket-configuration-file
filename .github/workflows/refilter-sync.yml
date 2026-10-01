@@ -111,19 +111,28 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+          # Заметки собираются в файл, а не передаются строкой в --notes:
+          # многострочный аргумент с переводами строк внутри YAML-блока
+          # обрывает сам блок, и workflow падает на старте, оставаясь при этом
+          # формально валидным YAML. Поймано первым же прогоном.
+          {
+            echo "РКН-листы 1andrevich/Re-filter-lists в синтаксисе Shadowrocket."
+            echo
+            echo "Обновлено: $(date -u '+%Y-%m-%d %H:%M UTC')"
+            echo "refilter-domains.list: $(grep -c '^DOMAIN-SUFFIX,' out/refilter-domains.list) правил"
+            echo "refilter-ipsum.list:   $(grep -c '^IP-CIDR,' out/refilter-ipsum.list) правил"
+            echo
+            echo "Источник: https://github.com/1andrevich/Re-filter-lists"
+            echo "Сборка: scripts/build_refilter.py"
+            echo "Обновляется ежедневно workflow refilter-sync. Ассеты этого релиза — стабильные URL для RULE-SET."
+          } > release-notes.md
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" --notes-file release-notes.md
+          else
             gh release create "$RELEASE_TAG" \
               --title "Re-filter lists (Shadowrocket syntax)" \
-              --notes "РКН-листы 1andrevich/Re-filter-lists, пересобранные в синтаксис Shadowrocket. Обновляется ежедневно workflow refilter-sync. Ассеты этого релиза — стабильные URL для RULE-SET."
+              --notes-file release-notes.md
           fi
           gh release upload "$RELEASE_TAG" \
             out/refilter-domains.list out/refilter-ipsum.list --clobber
-          gh release edit "$RELEASE_TAG" \
-            --notes "РКН-листы 1andrevich/Re-filter-lists в синтаксисе Shadowrocket.
-
-Обновлено: $(date -u '+%Y-%m-%d %H:%M UTC')
-refilter-domains.list: $(grep -c '^DOMAIN-SUFFIX,' out/refilter-domains.list) правил
-refilter-ipsum.list:   $(grep -c '^IP-CIDR,' out/refilter-ipsum.list) правил
-
-Источник: https://github.com/1andrevich/Re-filter-lists
-Сборка: scripts/build_refilter.py"
