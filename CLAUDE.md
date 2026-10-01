@@ -1,6 +1,6 @@
-# WARP.md
+# CLAUDE.md
 
-This file provides guidance to WARP (warp.dev) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Overview
 
@@ -10,11 +10,15 @@ This repo maintains a Shadowrocket configuration (`ru_config-private.conf`) plus
 - Derived artifacts (CI and local):
   - `rules/private.dedup.list`
   - `rules/private.dedup-direct.list`
+  - release assets under tag `refilter`: `refilter-domains.list`, `refilter-ipsum.list`
 - The Shadowrocket config `ru_config-private.conf` references external RULE-SETs and the private lists (preferably the deduped ones).
 
-Two GitHub Actions automate validation, deduplication, and config regeneration:
+⚠️ **`ru_config-private.conf` is hand-authored source of truth, not a derived artifact** (changed 2026-10-01). It used to be regenerated every 6h from `amatol/shadowrocket-configuration`; that rebuild destroyed the hand-ordered `[Rule]` section and has been removed from `update-config.yml`. Rule order is load-bearing — the DIRECT override must stay above every PROXY rule-set, see the comments in the file for the specific hosts that break otherwise.
+
+Three GitHub Actions automate validation, deduplication, and the RKN list build:
 - `.github/workflows/validate-and-dedup.yml` validates lists/config, produces deduped lists, and commits updates when needed.
-- `.github/workflows/update-config.yml` periodically rebuilds `ru_config-private.conf` from an upstream base and injects private RULE-SETs.
+- `.github/workflows/update-config.yml` rebuilds the deduped lists and validates the config (the upstream-rebuild steps were removed).
+- `.github/workflows/refilter-sync.yml` converts `1andrevich/Re-filter-lists` into Shadowrocket syntax daily and publishes the result as release assets under the fixed tag `refilter`.
 
 ## Common local commands
 
@@ -51,6 +55,19 @@ Validate the deduplicated outputs:
 python3 scripts/validate_rules.py rules/private.dedup.list --check-urls
 python3 scripts/validate_rules.py rules/private.dedup-direct.list --check-urls
 ```
+
+Rebuild the Re-filter (RKN) lists locally:
+
+```sh
+mkdir -p upstream out
+curl -sSfL -o upstream/domains_all.lst https://github.com/1andrevich/Re-filter-lists/releases/latest/download/domains_all.lst
+curl -sSfL -o upstream/ipsum.lst       https://github.com/1andrevich/Re-filter-lists/releases/latest/download/ipsum.lst
+python3 scripts/build_refilter.py upstream/domains_all.lst upstream/ipsum.lst out
+python3 scripts/validate_rules.py out/refilter-domains.list
+python3 scripts/validate_rules.py out/refilter-ipsum.list
+```
+
+Outputs are published as release assets, **not** committed — they are ~2.8 MB combined and change daily.
 
 Validate the Shadowrocket config:
 
@@ -117,3 +134,19 @@ perl -0777 -pe 'BEGIN{$d=$ENV{"DEDUP_RAW_DIRECT"}} s{RULE-SET,\s*https?://[^,]*p
 - URL reachability checks require `requests`; omit `--check-urls` if working fully offline.
 - Deduped lists may be empty if inputs contain only comments/blank lines; that’s valid.
 - The CI commit steps mutate the branch on change (ensure your local branch is in sync when developing new rules).
+
+## Re-filter conversion
+
+`scripts/build_refilter.py` exists because Re-filter publishes only `.srs`/`.dat`
+(sing-box, xray) and flat `.lst` files — nothing in Shadowrocket syntax. The home
+router consumes the same upstream lists as binary `.srs` rule-sets, so converting
+here is what keeps phone and router routing identical.
+
+Two safe reductions are applied: a domain is dropped when a parent suffix is
+already present (`DOMAIN-SUFFIX` of the parent covers it), and CIDRs are collapsed
+with `ipaddress.collapse_addresses`. Both save about 8%.
+
+`refilter-sync.yml` refuses to publish when the result falls below absolute floors
+(`MIN_DOMAINS`, `MIN_IPS`) or shrinks more than `MAX_SHRINK_PCT` against what is
+already published. Without those gates a truncated upstream release would silently
+strip all RKN routing from every device pulling the config.
