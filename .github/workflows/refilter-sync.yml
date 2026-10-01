@@ -1,0 +1,129 @@
+name: Sync Re-filter lists
+
+# Пересобирает РКН-листы в синтаксис Shadowrocket и публикует их ассетами
+# релиза с фиксированным тегом `refilter`.
+#
+# Почему релиз, а не коммит в репозиторий: файлы занимают ~2.8 МБ и меняются
+# каждые сутки. Коммит такого размера ежедневно раздувает историю без всякой
+# пользы — содержимое производное, его всегда можно пересобрать из upstream.
+# Фиксированный тег даёт стабильный URL для RULE-SET.
+#
+# Интервал 24h — тот же, что update_interval у rule_set на домашнем роутере.
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build_refilter.py'
+      - '.github/workflows/refilter-sync.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refilter-sync
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: refilter
+  UPSTREAM: https://github.com/1andrevich/Re-filter-lists/releases/latest/download
+  # Нижние границы здравого смысла. Upstream в принципе может выложить
+  # обрезанный релиз, и тогда без этой проверки CI молча опубликует пустой
+  # список — телефон потеряет всю РКН-маршрутизацию, не сказав ни слова.
+  MIN_DOMAINS: '40000'
+  MIN_IPS: '10000'
+  # Относительный порог: падение больше чем на эту долю от уже
+  # опубликованного — повод остановиться, а не публиковать.
+  MAX_SHRINK_PCT: '20'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Download upstream lists
+        run: |
+          set -euo pipefail
+          mkdir -p upstream out
+          curl -sSfL --retry 3 -o upstream/domains_all.lst "$UPSTREAM/domains_all.lst"
+          curl -sSfL --retry 3 -o upstream/ipsum.lst       "$UPSTREAM/ipsum.lst"
+          wc -l upstream/*.lst
+
+      - name: Convert to Shadowrocket syntax
+        run: python3 scripts/build_refilter.py upstream/domains_all.lst upstream/ipsum.lst out
+
+      - name: Validate generated lists
+        run: |
+          set -euo pipefail
+          python3 scripts/validate_rules.py out/refilter-domains.list
+          python3 scripts/validate_rules.py out/refilter-ipsum.list
+
+      - name: Sanity gate (absolute floors)
+        run: |
+          set -euo pipefail
+          d=$(grep -c '^DOMAIN-SUFFIX,' out/refilter-domains.list)
+          i=$(grep -c '^IP-CIDR,'       out/refilter-ipsum.list)
+          echo "сгенерировано: домены=$d, ip=$i"
+          if [ "$d" -lt "$MIN_DOMAINS" ]; then
+            echo "::error::домены: $d < порога $MIN_DOMAINS — upstream похож на обрезанный, не публикуем"
+            exit 1
+          fi
+          if [ "$i" -lt "$MIN_IPS" ]; then
+            echo "::error::ip: $i < порога $MIN_IPS — upstream похож на обрезанный, не публикуем"
+            exit 1
+          fi
+
+      - name: Sanity gate (не уменьшилось резко против опубликованного)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for pair in "refilter-domains.list:^DOMAIN-SUFFIX," "refilter-ipsum.list:^IP-CIDR,"; do
+            f="${pair%%:*}"; pat="${pair##*:}"
+            new=$(grep -c "$pat" "out/$f")
+            if gh release download "$RELEASE_TAG" --pattern "$f" --dir prev 2>/dev/null; then
+              old=$(grep -c "$pat" "prev/$f" || echo 0)
+              if [ "$old" -gt 0 ]; then
+                floor=$(( old * (100 - MAX_SHRINK_PCT) / 100 ))
+                echo "$f: было $old, стало $new, порог $floor"
+                if [ "$new" -lt "$floor" ]; then
+                  echo "::error::$f сжался с $old до $new (>$MAX_SHRINK_PCT%) — не публикуем"
+                  exit 1
+                fi
+              fi
+            else
+              echo "$f: опубликованной версии нет, сравнивать не с чем — первая публикация"
+            fi
+          done
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --title "Re-filter lists (Shadowrocket syntax)" \
+              --notes "РКН-листы 1andrevich/Re-filter-lists, пересобранные в синтаксис Shadowrocket. Обновляется ежедневно workflow refilter-sync. Ассеты этого релиза — стабильные URL для RULE-SET."
+          fi
+          gh release upload "$RELEASE_TAG" \
+            out/refilter-domains.list out/refilter-ipsum.list --clobber
+          gh release edit "$RELEASE_TAG" \
+            --notes "РКН-листы 1andrevich/Re-filter-lists в синтаксисе Shadowrocket.
+
+Обновлено: $(date -u '+%Y-%m-%d %H:%M UTC')
+refilter-domains.list: $(grep -c '^DOMAIN-SUFFIX,' out/refilter-domains.list) правил
+refilter-ipsum.list:   $(grep -c '^IP-CIDR,' out/refilter-ipsum.list) правил
+
+Источник: https://github.com/1andrevich/Re-filter-lists
+Сборка: scripts/build_refilter.py"
